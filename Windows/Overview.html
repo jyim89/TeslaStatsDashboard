@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="VehicleData.js"></script>
+<script src="BatteryData.js"></script>
+<style>
+
+  .card {
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+    width: 45%;
+    float: left;
+    margin: 5px; 
+  }
+
+  .card:hover {
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+  }
+
+  .container {
+    padding: 2px 16px;
+  }
+  
+  .container p{
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="cards">
+    <div class="card">
+      <div class="container">
+        <h4><b>Vehicle Name</b></h4> 
+        <p id="VehicleName">Name</p> 
+      </div>
+    </div>
+    <div class="card">
+      <div class="container">
+        <h4><b>Odometer</b></h4> 
+        <p id="Odometer">Miles</p> 
+      </div>
+    </div>
+    <div class="card">
+      <div class="container">
+        <h4><b>Miles Remaining</b></h4> 
+        <p id="MilesRemaining">Miles</p> 
+      </div>
+    </div>
+    <div class="card">
+      <div class="container">
+        <h4><b>Software Version</b></h4> 
+        <p id="SoftwareVersion">Version</p> 
+      </div>
+    </div>
+  </div>
+  <script>
+    // Handle page  parameters
+    if ( location.href.indexOf('?') > -1){
+      var pageParams = location.href.split('?')[1].split('&');
+      var dataParams = {};
+      for (param in pageParams) {
+        dataParams[pageParams[param].split('=')[0]] = (pageParams[param].split('=')[1]).replace(/%20/g, " ");
+      }
+
+      // Check if data exists and filter based on parameters
+      if (typeof VehicleData != "undefined") {
+        VehicleData = VehicleData.filter(function (d) {
+          return (d.Id == dataParams["id"] 
+          && new Date(d.DateTimeUTC + " UTC") >= new Date(dataParams["minDate"])
+          && new Date(d.DateTimeUTC + " UTC") <= new Date(dataParams["maxDate"])
+          )
+        });
+      }
+      else {
+        var VehicleData = []
+      }
+      if (typeof BatteryData != "undefined") {
+        BatteryData = BatteryData.filter(function (d) {
+          return (d.Id == dataParams["id"] 
+          && new Date(d.DateTimeUTC + " UTC") >= new Date(dataParams["minDate"])
+          && new Date(d.DateTimeUTC + " UTC") <= new Date(dataParams["maxDate"])
+          )
+        });
+      }
+      else {
+        var BatteryData = []
+      }
+    }
+    
+  
+    document.getElementById("VehicleName").innerHTML = VehicleData[VehicleData.length - 1].VehicleName;
+    document.getElementById("Odometer").innerHTML = parseInt(VehicleData[VehicleData.length - 1].Odometer);
+    document.getElementById("MilesRemaining").innerHTML = parseInt(BatteryData[BatteryData.length - 1].CurrentRatedBatteryRange);
+    document.getElementById("SoftwareVersion").innerHTML = VehicleData[VehicleData.length - 1].SoftwareVersion;
+  </script>
+</body>
+</html>

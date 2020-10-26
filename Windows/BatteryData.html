@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
+<script src="BatteryData.js"></script>
+<script src="DrivingData.js"></script>
+<script src="ChargingData.js"></script>
+<script>
+  $(document).ready(function() {
+    $("canvas").css("max-width", $(window).width() - 15); //15 buffer for padding
+  });
+</script>
+</head>
+<body>
+  <div id="graphs" style="display: inline-block;">
+	<canvas style="display: inline-block; border:1px solid rgba(0,0,0,0.2);" id="BatteryGraph" width="400" height="400"></canvas>
+  <canvas style="display: inline-block; border:1px solid rgba(0,0,0,0.2);" id="RangeGraph" width="400" height="400"></canvas>
+  <canvas style="display: inline-block; border:1px solid rgba(0,0,0,0.2);" id="BatteryRangeEfficiency" width="400" height="400"></canvas>
+  <canvas style="display: inline-block; border:1px solid rgba(0,0,0,0.2);" id="PhantomDrain" width="400" height="400"></canvas>
+  <canvas style="display: inline-block; border:1px solid rgba(0,0,0,0.2);" id="BatteryAvailability" width="400" height="400"></canvas>
+  </div>
+	<script>
+    // Handle page  parameters
+    if ( location.href.indexOf('?') > -1){
+      var pageParams = location.href.split('?')[1].split('&');
+      var dataParams = {};
+      for (param in pageParams) {
+        dataParams[pageParams[param].split('=')[0]] = (pageParams[param].split('=')[1]).replace(/%20/g, " ");
+      }
+      
+      // Check if data exists and filter based on parameters
+      if (typeof BatteryData != "undefined") {
+        BatteryData = BatteryData.filter(function (d) {
+          return (d.Id == dataParams["id"] 
+          && new Date(d.DateTimeUTC + " UTC") >= new Date(dataParams["minDate"])
+          && new Date(d.DateTimeUTC + " UTC") <= new Date(dataParams["maxDate"])
+          )
+        });
+      }
+      else {
+        var BatteryData = []
+      }
+      if (typeof DrivingData != "undefined") {
+        DrivingData = DrivingData.filter(function (d) {
+          return (d.Id == dataParams["id"] 
+          && new Date(d.DateTimeUTC + " UTC") >= new Date(dataParams["minDate"])
+          && new Date(d.DateTimeUTC + " UTC") <= new Date(dataParams["maxDate"])
+          )
+        });
+      }
+      else {
+        var DrivingData = []
+      }
+      if (typeof ChargingData != "undefined") {
+        ChargingData = ChargingData.filter(function (d) {
+          return (d.Id == dataParams["id"] 
+          && new Date(d.DateTimeUTC + " UTC") >= new Date(dataParams["minDate"])
+          && new Date(d.DateTimeUTC + " UTC") <= new Date(dataParams["maxDate"])
+          )
+        });
+      }
+      else {
+        var ChargingData = []
+      }
+    }
+  
+    //Battery Level Trend
+		var ctx = document.getElementById('BatteryGraph').getContext('2d');
+    var data = [];
+    var series = [];
+    var labels = [];
+    BatteryData.forEach( datapoint => {
+      data.push(datapoint.CurrentBatteryLevel);
+      labels.push(new Date(datapoint.DateTimeUTC + " UTC"));
+    });
+		var myChart = new Chart(ctx, {
+			type: 'line',
+			data: {
+				labels: labels,
+				datasets: [{
+					label: '% of Battery Remaining',
+					data: data,
+					backgroundColor: [
+						'rgba(54, 162, 235, 0.2)'
+					],
+					borderColor: [
+						'rgba(54, 162, 235, 1)'
+					],
+					borderWidth: 1
+				}]
+			},
+			options: {
+				scales: {
+					yAxes: [{
+						ticks: {
+							beginAtZero: true,
+							callback: function (value) {
+								return (value / this.max * 100).toFixed(0) + '%'; // convert it to percentage
+							}
+						}
+					}],
+				    xAxes:[{
+					    type: 'time',
+					    time: {
+						    unit: 'week',
+						    displayFormats:{
+								'week': 'MMM DD YYYY'
+							}
+						}
+					}]
+				},
+				elements: {
+					point: {
+						hitRadius: 5,
+            radius: 0
+					}
+				},
+        title: {
+          display: true,
+          text: 'Battery Available Trend'
+        },
+				responsive: false,
+				maintainAspectRatio: false
+			}
+		});
+    
+    // Range Available Trend
+    ctx = document.getElementById('RangeGraph').getContext('2d');
+    var ratedRangeData = [];
+    var estimatedRangeData = [];
+    series = [];
+    labels = [];
+    BatteryData.forEach( datapoint => {
+      ratedRangeData.push(datapoint.CurrentRatedBatteryRange);
+      estimatedRangeData.push(datapoint.CurrentEstimatedBatteryRange);
+      labels.push(new Date(datapoint.DateTimeUTC + " UTC"));
+    });
+    myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Rated Range',
+            data: ratedRangeData,
+            fill: false,
+            /*backgroundColor: [
+              'rgba(54, 162, 235, 0.2)'
+            ],*/
+            borderColor: [
+              'rgba(54, 162, 235, 1)'
+            ],
+            borderWidth: 1
+          },
+          {
+            label: 'Estimated Range',
+            data: estimatedRangeData,
+            fill: false,
+            /*backgroundColor: [
+              'rgba(255, 206, 86, 0.2)'
+            ],*/
+            borderColor: [
+              'rgba(255, 206, 86, 1)'
+            ],
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }],
+          xAxes:[{
+              type: 'time',
+              time: {
+                unit: 'week',
+                displayFormats:{
+                'week': 'MMM DD YYYY'
+              }
+            }
+          }]
+        },
+        elements: {
+          point: {
+            hitRadius: 5,
+            radius: 0
+          }
+        },
+        title: {
+          display: true,
+          text: 'Range Available Trend'
+        },
+        responsive: false,
+        maintainAspectRatio: false
+      }
+    });
+    
+    //Range Efficiency
+    ctx = document.getElementById('BatteryRangeEfficiency').getContext('2d');
+    var rangeEfficiencyData = [];
+    series = [];
+    labels = [];
+    BatteryData.forEach( datapoint => {
+      rangeEfficiencyData.push((datapoint.CurrentEstimatedBatteryRange / datapoint.CurrentRatedBatteryRange) * 100);
+      labels.push(new Date(datapoint.DateTimeUTC + " UTC"));
+    });
+    myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Battery Range Efficiency',
+            data: rangeEfficiencyData,
+            backgroundColor: [
+              'rgba(54, 162, 235, 0.2)'
+            ],
+            borderColor: [
+              'rgba(54, 162, 235, 1)'
+            ],
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            ticks: {
+              min: 0,
+              callback: function(value) {
+                  return value + "%"
+              }
+            }
+          }],
+          xAxes:[{
+              type: 'time',
+              time: {
+                unit: 'week',
+                displayFormats:{
+                'week': 'MMM DD YYYY'
+              }
+            }
+          }]
+        },
+        elements: {
+          point: {
+            hitRadius: 5,
+            radius: 0
+          }
+        },
+        title: {
+          display: true,
+          text: 'Battery Range Efficiency Trend'
+        },
+        responsive: false,
+        maintainAspectRatio: false
+      }
+    });
+    
+    //Phantom Drain
+    var dailyBatteryPhantomDrain = {}
+    var dailyRangePhantomDrain = {}
+    for (i = 1; i < BatteryData.length; i++) {
+      if (!DrivingData.some(data => data.DateTimeUTC == BatteryData[i].DateTimeUTC) 
+      && !ChargingData.some(data => data.DateTimeUTC == BatteryData[i].DateTimeUTC) 
+      && !DrivingData.some(data => data.DateTimeUTC == BatteryData[i - 1].DateTimeUTC) 
+      && !ChargingData.some(data => data.DateTimeUTC == BatteryData[i - 1].DateTimeUTC) 
+      && BatteryData[i].CurrentBatteryLevel - BatteryData[i - 1].CurrentBatteryLevel <= 3 
+      && BatteryData[i].CurrentBatteryLevel - BatteryData[i - 1].CurrentBatteryLevel >= -3) {
+        var UtcDate = new Date(BatteryData[i].DateTimeUTC + " UTC");        
+        var localDayOnly = new Date(UtcDate.getFullYear(), UtcDate.getMonth(), UtcDate.getDate());
+
+        /*
+        if(localDayOnly.getDate() == 12) {
+          console.log(BatteryData[i].DateTimeUTC + ":>" + BatteryData[i].CurrentBatteryLevel + " - " + BatteryData[i - 1].CurrentBatteryLevel + ":>" + (BatteryData[i].CurrentBatteryLevel - BatteryData[i - 1].CurrentBatteryLevel));
+          console.log(BatteryData[i].DateTimeUTC + ":>" + BatteryData[i].CurrentRatedBatteryRange + " - " + BatteryData[i - 1].CurrentRatedBatteryRange);
+        }
+        */
+        
+        if (!(localDayOnly in dailyBatteryPhantomDrain)) {
+          dailyBatteryPhantomDrain[localDayOnly] = (BatteryData[i].CurrentBatteryLevel - BatteryData[i - 1].CurrentBatteryLevel);
+          dailyRangePhantomDrain[localDayOnly] = (BatteryData[i].CurrentRatedBatteryRange - BatteryData[i - 1].CurrentRatedBatteryRange);
+        }
+        else {
+          dailyBatteryPhantomDrain[localDayOnly] += (BatteryData[i].CurrentBatteryLevel - BatteryData[i - 1].CurrentBatteryLevel);
+          dailyRangePhantomDrain[localDayOnly] += (BatteryData[i].CurrentRatedBatteryRange - BatteryData[i - 1].CurrentRatedBatteryRange);
+        }
+      }
+    }
+    //console.log(dailyBatteryPhantomDrain)
+    //console.log(dailyRangePhantomDrain)
+    
+    ctx = document.getElementById('PhantomDrain').getContext('2d');
+    var batteryPhantomDrainData = Object.values(dailyBatteryPhantomDrain);
+    var rangePhantomDrainData = Object.values(dailyRangePhantomDrain);
+    series = [];
+    labels = Object.keys(dailyBatteryPhantomDrain);
+    myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Battery Drain (L)',
+            yAxisID: 'battery',
+            data: batteryPhantomDrainData,
+            fill: false,
+            /*backgroundColor: [
+              'rgba(54, 162, 235, 0.2)'
+            ],*/
+            borderColor: [
+              'rgba(54, 162, 235, 1)'
+            ],
+            borderWidth: 1
+          },
+          {
+            label: 'Range Drain (R)',
+            yAxisID: 'range',
+            data: rangePhantomDrainData,
+            backgroundColor: 'rgba(255, 206, 86, 0.2)',
+            borderColor: 'rgba(255, 206, 86, 1)',
+            borderWidth: 1,
+            type: 'bar'
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [
+            {
+              id: 'battery',
+              position: 'left',
+              scalePositionLeft: true,
+              ticks: {
+                min: -100,
+                callback: function (value) {
+                  return value + '%'; // convert it to percentage
+                }
+              }
+            },
+            {
+              id: 'range',
+              position: 'right',
+              barBeginAtOrigin: true,
+              scalePositionLeft: false,
+              ticks: {
+                suggestedMin: -500
+              }
+            }
+          ],
+          xAxes:[{
+              type: 'time',
+              time: {
+                unit: 'week',
+                displayFormats:{
+                'week': 'MMM DD YYYY'
+              }
+            }
+          }]
+        },
+        elements: {
+          point: {
+            hitRadius: 5,
+            radius: 0
+          }
+        },
+        title: {
+          display: true,
+          text: 'Phantom Drain per Day'
+        },
+        responsive: false,
+        maintainAspectRatio: false
+      }
+    });
+    
+    //Battery Availability Trend
+		var ctx = document.getElementById('BatteryAvailability').getContext('2d');
+    var data = [];
+    var series = [];
+    var labels = [];
+    BatteryData.forEach( datapoint => {
+      data.push(datapoint.UsableBatteryLevel / datapoint.CurrentBatteryLevel);
+      labels.push(new Date(datapoint.DateTimeUTC + " UTC"));
+    });
+		var myChart = new Chart(ctx, {
+			type: 'line',
+			data: {
+				labels: labels,
+				datasets: [{
+					label: '% of Battery usable',
+					data: data,
+					backgroundColor: [
+						'rgba(54, 162, 235, 0.2)'
+					],
+					borderColor: [
+						'rgba(54, 162, 235, 1)'
+					],
+					borderWidth: 1
+				}]
+			},
+			options: {
+				scales: {
+					yAxes: [{
+						ticks: {
+							beginAtZero: true,
+							callback: function (value) {
+								return (value / this.max * 100).toFixed(0) + '%'; // convert it to percentage
+							}
+						}
+					}],
+				    xAxes:[{
+					    type: 'time',
+					    time: {
+						    unit: 'week',
+						    displayFormats:{
+								'week': 'MMM DD YYYY'
+							}
+						}
+					}]
+				},
+				elements: {
+					point: {
+						hitRadius: 5,
+            radius: 0
+					}
+				},
+        title: {
+          display: true,
+          text: 'Battery Available Trend'
+        },
+				responsive: false,
+				maintainAspectRatio: false
+			}
+		});
+	</script>
+</body>
+</html>

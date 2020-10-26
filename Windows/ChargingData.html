@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
+<script src="ChargingData.js"></script>
+<script>
+  $(document).ready(function() {
+    $("canvas").css("max-width", $(window).width() - 15); //15 buffer for padding
+  });
+</script>
+</head>
+<body>
+  <div id="graphs" style="display: inline-block;">
+	<canvas style="display: inline-block; border:1px solid rgba(0,0,0,0.2);" id="ChargeEnergyAdded" width="400" height="400"></canvas>
+  <canvas style="display: inline-block; border:1px solid rgba(0,0,0,0.2);" id="MinutesToCharge" width="400" height="400"></canvas>
+  <canvas style="display: inline-block; border:1px solid rgba(0,0,0,0.2);" id="RangeRates" width="400" height="400"></canvas>
+  </div>
+	<script>
+    // Handle page  parameters
+    if ( location.href.indexOf('?') > -1){
+      var pageParams = location.href.split('?')[1].split('&');
+      var dataParams = {};
+      for (param in pageParams) {
+        dataParams[pageParams[param].split('=')[0]] = (pageParams[param].split('=')[1]).replace(/%20/g, " ");
+      }
+      
+      // Check if data exists and filter based on parameters
+      if (typeof ChargingData != "undefined") {
+        ChargingData = ChargingData.filter(function (d) {
+          return (d.Id == dataParams["id"] 
+          && new Date(d.DateTimeUTC + " UTC") >= new Date(dataParams["minDate"])
+          && new Date(d.DateTimeUTC + " UTC") <= new Date(dataParams["maxDate"])
+          )
+        });
+      }
+      else {
+        var ChargingData = []
+      }
+    }
+    
+    // Calculate charging data per charging session
+    var chargingInfos = {}
+
+    ChargingData.forEach( datapoint => {
+      var datapointDate = new Date(datapoint.DateTimeUTC + " UTC");
+      var chargeSessionIdentifier = datapoint.Id + datapoint.ChargeCoordinates + datapointDate.getYear() + datapointDate.getMonth() + datapointDate.getDate();
+      if (!(chargeSessionIdentifier in chargingInfos)) {
+        var chargeInfo = {};
+        chargeInfo["StartTime"] = datapointDate;
+        chargeInfo["EndTime"] = datapointDate;
+        chargeInfo["ChargeEnergyAdded"] = parseInt(datapoint.ChargeEnergyAdded);
+        chargeInfo["ChargeIdealMilesAdded"] = parseInt(datapoint.ChargeIdealMilesAdded);
+        chargeInfo["ChargeRatedMilesAdded"] = parseInt(datapoint.ChargeRatedMilesAdded);
+        chargeInfo["ChargeRangeRate"] = parseInt(datapoint.ChargeRangeRate);
+        chargeInfo["ChargeCurrent"] = parseInt(datapoint.ChargeCurrent);
+        chargeInfo["ChargeKW"] = parseInt(datapoint.ChargeKW);
+        chargeInfo["ChargeVoltage"] = parseInt(datapoint.ChargeVoltage);
+        chargeInfo["MinutesToFullCharge"] = parseInt(datapoint.MinutesToFullCharge);
+        chargeInfo["DataCapturesForCharge"] = 1;
+        chargingInfos[chargeSessionIdentifier] = chargeInfo;
+      }
+      else {
+        if (datapointDate < chargingInfos[chargeSessionIdentifier].StartTime) {
+          chargingInfos[chargeSessionIdentifier].StartTime = datapointDate;
+        }
+        if (datapointDate > chargingInfos[chargeSessionIdentifier].EndTime) {
+          chargingInfos[chargeSessionIdentifier].EndTime = datapointDate;
+        } 
+        if (parseInt(datapoint.ChargeEnergyAdded) > chargingInfos[chargeSessionIdentifier].ChargeEnergyAdded) {
+          chargingInfos[chargeSessionIdentifier].ChargeEnergyAdded = parseInt(datapoint.ChargeEnergyAdded);
+        }
+        if (parseInt(datapoint.ChargeIdealMilesAdded) > chargingInfos[chargeSessionIdentifier].ChargeIdealMilesAdded) {
+          chargingInfos[chargeSessionIdentifier].ChargeIdealMilesAdded = parseInt(datapoint.ChargeIdealMilesAdded);
+        }
+        if (parseInt(datapoint.ChargeRatedMilesAdded) > chargingInfos[chargeSessionIdentifier].ChargeRatedMilesAdded) {
+          chargingInfos[chargeSessionIdentifier].ChargeRatedMilesAdded = parseInt(datapoint.ChargeRatedMilesAdded);
+        }
+        
+        chargingInfos[chargeSessionIdentifier].ChargeRangeRate += parseInt(datapoint.ChargeRangeRate);
+        chargingInfos[chargeSessionIdentifier].ChargeCurrent += parseInt(datapoint.ChargeCurrent);
+        chargingInfos[chargeSessionIdentifier].ChargeKW += parseInt(datapoint.ChargeKW);
+        chargingInfos[chargeSessionIdentifier].ChargeVoltage += parseInt(datapoint.ChargeVoltage);
+        chargingInfos[chargeSessionIdentifier].DataCapturesForCharge++;
+      }
+    });
+    
+    //console.log(chargingInfos)
+  
+    // Range Available Trend
+    var ctx = document.getElementById('ChargeEnergyAdded').getContext('2d');
+    var series = [];
+    var labels = Object.values(chargingInfos).map( a => a.StartTime);
+    var energyAddedData = Object.values(chargingInfos).map( a => a.ChargeEnergyAdded);
+    var rangeAddedData = Object.values(chargingInfos).map( a => a.ChargeRatedMilesAdded);
+    var myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Charge (L)',
+            data: energyAddedData,
+            yAxisID: 'battery',
+            fill: false,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Rated Range (R)',
+            yAxisID: 'range',
+            data: rangeAddedData,
+            fill: false,
+            backgroundColor: 'rgba(255, 206, 86, 0.2)',
+            borderColor: 'rgba(255, 206, 86, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [
+            {
+              id: 'battery',
+              position: 'left',
+              scalePositionLeft: true,
+              ticks: {
+                min: 0,
+                max: 100,
+                callback: function (value) {
+                  return value + '%'; // convert it to percentage
+                }
+              }
+            },
+            {
+              id: 'range',
+              position: 'right',
+              barBeginAtOrigin: true,
+              scalePositionLeft: false,
+              ticks: {
+                suggestedMin: 0
+              }
+            }
+          ],
+          xAxes:[{
+            ticks: {
+              userCallback: function(label, index, labels) {
+                  return index + 1;
+              }
+            },
+            scaleLabel: {
+              display: true,
+              labelString: 'Charge Session (Hover over bar for Date and Time)'
+            }
+          }]
+        },
+        elements: {
+          point: {
+            hitRadius: 5,
+            radius: 0
+          }
+        },
+        title: {
+          display: true,
+          text: 'Energy and Range Added per Charging Session'
+        },
+        responsive: false,
+        maintainAspectRatio: false
+      }
+    });
+    
+    // Minutes Taken to charge
+    var ctx = document.getElementById('MinutesToCharge').getContext('2d');
+    var series = [];
+    var labels = Object.values(chargingInfos).map( a => a.StartTime);
+    var minutesCharged = Object.values(chargingInfos).map( a => Math.round((a.EndTime - a.StartTime) / 60000));
+    var myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Minutes',
+            data: minutesCharged,
+            fill: false,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [
+            {
+              position: 'left',
+              scalePositionLeft: true,
+              ticks: {
+                min: 0
+              }
+            }
+          ],
+          xAxes:[{
+            ticks: {
+              userCallback: function(label, index, labels) {
+                  return index + 1;
+              }
+            },
+            scaleLabel: {
+              display: true,
+              labelString: 'Charge Session (Hover over bar for Date and Time)'
+            }
+          }]
+        },
+        elements: {
+          point: {
+            hitRadius: 5,
+            radius: 0
+          }
+        },
+        title: {
+          display: true,
+          text: 'Time taken per Charging session'
+        },
+        responsive: false,
+        maintainAspectRatio: false
+      }
+    });
+    
+    // Average Range Rate per Charging Session
+    ctx = document.getElementById('RangeRates').getContext('2d');
+    series = [];
+    labels = Object.values(chargingInfos).map( a => a.StartTime);
+    var rangeRates = Object.values(chargingInfos).map( a => a.ChargeRangeRate / a.DataCapturesForCharge);
+    var kwRates = Object.values(chargingInfos).map( a => a.ChargeKW / a.DataCapturesForCharge);
+    myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'avg KW rate (L)',
+            yAxisID: 'kw',
+            data: kwRates,
+            fill: false,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+            type: 'bar'
+          },
+          {
+            label: 'Avg Range Added per Hour (R)',
+            yAxisID: 'range',
+            data: rangeRates,
+            fill: false,
+            backgroundColor: 'rgba(255, 206, 86, 0.2)',
+            borderColor: 'rgba(255, 206, 86, 1)',
+            borderWidth: 1,
+            type: 'bar'
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [
+            {
+              id: 'kw',
+              position: 'left',
+              scalePositionLeft: true,
+              ticks: {
+                min: 0
+              }
+            },
+            {
+              id: 'range',
+              position: 'right',
+              scalePositionLeft: false,
+              ticks: {
+                min: 0
+              }
+            }
+          ],
+          xAxes:[{
+            ticks: {
+              userCallback: function(label, index, labels) {
+                  return index + 1;
+              }
+            },
+            scaleLabel: {
+              display: true,
+              labelString: 'Charge Session (Hover over bar for Date and Time)'
+            }
+          }]
+        },
+        elements: {
+          point: {
+            hitRadius: 5,
+            radius: 0
+          }
+        },
+        title: {
+          display: true,
+          text: 'Average Rates per Charging Session'
+        },
+        responsive: false,
+        maintainAspectRatio: false
+      }
+    });
+  </script>
+</body>
+</html>

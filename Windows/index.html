@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
+  <script src="https://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
+
+
+<link rel="Overview" href="Overview.html">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="Vehicles.js"></script>
+<script src="VehicleData.js"></script>
+<style>
+body {font-family: Arial;}
+
+/* Style the tab */
+.tab {
+  overflow: hidden;
+  border-bottom: 1px solid #ccc;
+  /*background-color: #f1f1f1;*/
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+  background-color: rgba(54, 162, 235, 0.2);
+  float: left;
+  border: 1px solid rgba(54, 162, 235, 1);
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+  background-color: rgba(54, 162, 235, 0.5)
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+  background-color: rgba(54, 162, 235, 1);
+}
+
+/* Style the tab content */
+.tabcontent {
+  display: none;
+  padding: 6px 0px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+canvas{
+  display:inline-block;
+  width: 400px;
+  height: 400px
+}
+</style>
+</head>
+<body>
+
+<h2>Tesla Vehicle Stats Dashboard</h2>
+<h4>Filters</h4>
+<label>Car Name: </label><select id="VehicleId" onload="openView(null, 'Default')" onchange="openView(null, 'Default')"></select>
+<div style="display: inline-block">
+  <label for="DateSlider">Date range (slide below):</label>
+  <input type="text" id="DateSlider" style="border: 0; color: #f6931f; font-weight: bold;" size="100"/>
+</div>
+ 
+<div id="slider-range"></div>
+<br /><br />
+<div class="tab">
+  <button class="tablinks" onclick="openView(event, 'Overview')" id="defaultOpen">Overview</button>
+  <button class="tablinks" onclick="openView(event, 'DrivingData')">Driving Data</button>
+  <button class="tablinks" onclick="openView(event, 'BatteryData')">Battery Data</button>
+  <button class="tablinks" onclick="openView(event, 'ChargingData')">Charging Data</button>
+</div>
+
+<div id="Overview" class="tabcontent">
+Overview
+</div>
+
+<div id="DrivingData" class="tabcontent">
+Driving Data
+</div>
+
+<div id="BatteryData" class="tabcontent">
+Battery Data
+</div>
+
+<div id="ChargingData" class="tabcontent">
+Charging Data
+</div>
+
+<script>
+  var currentView = "Overview"
+  var carSelectMenu = document.getElementById("VehicleId");
+
+  if (Array.isArray()){
+    Vehicles.foreach( datapoint => {
+      var vehicle = document.createElement("option");
+      vehicle.textContent = datapoint.VehicleName;
+      vehicle.value = datapoint.Id;
+      carSelectMenu.appendChild(vehicle);
+    });
+  }
+  else
+  {
+    var vehicle = document.createElement("option");
+    vehicle.textContent = Vehicles.VehicleName;
+    vehicle.value = Vehicles.Id;
+    carSelectMenu.appendChild(vehicle);
+  }
+  
+  // time slider jquery function modified from https://codepen.io/2rod/pen/JtIki
+  var monthOffset = (24*60*60*1000) * 30; //30 days
+  var minDate =  new Date();
+  var maxDate = new Date();
+  $(function() {
+    $( "#slider-range" ).slider({
+      range: true,
+      min: new Date(VehicleData[0].DateTimeUTC + " UTC").getTime() / 1000,
+      max: new Date(VehicleData[VehicleData.length - 1].DateTimeUTC + " UTC").getTime() / 1000,
+      step: 86400,
+      values: [ (new Date('2013.01.01').getTime() - monthOffset) / 1000, new Date(VehicleData[VehicleData.length - 1].DateTimeUTC + " UTC").getTime() / 1000 ],
+      slide: function( event, ui ) {
+        $( "#DateSlider" ).val( (new Date(ui.values[ 0 ] *1000).toDateString() ) + " - " + (new Date(ui.values[ 1 ] *1000)).toDateString() );
+        minDate = new Date(ui.values[ 0 ] *1000);
+        maxDate = new Date(new Date(ui.values[ 1 ] *1000));
+        openView(null, "Default");
+      }
+    });
+    $( "#DateSlider" ).val( (new Date($( "#slider-range" ).slider( "values", 0 )*1000).toDateString()) +
+      " - " + (new Date($( "#slider-range" ).slider( "values", 1 )*1000)).toDateString());
+    minDate = new Date($( "#slider-range" ).slider( "values", 0 )*1000);
+    maxDate = new Date($( "#slider-range" ).slider( "values", 1 )*1000);
+    openView(null, "Default");  
+  });
+
+
+  function resizeTab(o, view) {
+    try {
+      var totalHeight = o.contentWindow.document.body.scrollHeight + 16 //Add 12 for padding
+    }
+    catch {
+      var totalHeight = 900;
+    }
+    document.getElementById("Overview").style.height = totalHeight + "px";
+    document.getElementById("BatteryData").style.height = totalHeight + "px";
+    document.getElementById("ChargingData").style.height = totalHeight + "px";
+    document.getElementById("DrivingData").style.height = totalHeight + "px";
+  }
+  function openView(evt, viewName) {
+    if (viewName == "Default") {
+      viewName = currentView;
+    }
+
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(viewName).style.display = "block";
+    if (evt != null) {
+      evt.currentTarget.className += " active";
+    }
+
+    var vehicleId = document.getElementById("VehicleId").value;
+    currentView = viewName;
+    var currentDate = new Date();
+    document.getElementById(viewName).innerHTML = '<iframe src="' + viewName + '.html?id=' + vehicleId + '&minDate=' + minDate + '&maxDate=' + maxDate + '&pageTime=' + currentDate.getTime() + '" id="DataFrame" onload="javascript: resizeTab(this,' +  viewName + ');" style="height:100%;width:100%;border:none;overflow:hidden;"></iframe>';
+  }
+
+  // Get the element with id="defaultOpen" and click on it
+  document.getElementById("defaultOpen").click();
+</script>
+   
+</body>
+</html> 
