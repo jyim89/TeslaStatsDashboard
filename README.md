@@ -13,8 +13,9 @@ Welcome to the TesDash! TesDash is a set of free, open source scripts that captu
 - Safari (Planned)
 
 ## Install steps
-1. Download all files from the "Windows" folder in this repo to your computer.
-2. Create a local folder (example: C:\TeslaData) and copy the downloaded contents to this folder.
+1. Download the contents of this repo (Look for the green "Code" download button on the right and save as zip).
+2. Open the downloaded zip file and identify the "Windows" folder.
+2. Create a local folder (example: C:\TeslaData) and copy everything inside the downloaded "Windows" folder to this folder.
 3. From within the local folder, run setup.bat as administrator (Right click on setup.bat then select "Run as administrator").
 4. Setup should be complete. To validate open Task Scheduler (Task Scheduler can be searched for within the search bar) and verify that the two "Tesla Data Collection" and "Tesla Data Backup" tasks appear and are enabled.
 
