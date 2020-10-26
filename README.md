@@ -29,6 +29,7 @@ While the vehicle is active, TesDash will continuously ping the car for addition
 
 ## Recommended advanced configuration
 - Access your dashboard online by enabling web app services using IIS(Internet Information Services). Great for seeing your data on the go on your mobile device. Instructions on how to set this up to come soon.
+- If you don't mind spending some money for convenience, you can also utilize cloud services such as AWS and Azure to "host" your dashboard so that your computer doesn't always have to be running. Instructions on how to set this up to come soon.
 
 ## Disclaimers
 - For TesDash to actively collect data around your vehicle, the computer you installed TesDash must be on at all times. Otherwise you will see gaps in your data. To remove or stop TesDash data collection, simply delete the two tasks mentioned above from Task Scheduler.
