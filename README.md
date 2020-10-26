@@ -2,7 +2,7 @@
 Welcome to the TesDash! TesDash is a set of free, open source scripts that captures various Tesla metrics and visualizes the data. The great thing about TesDash is that all data is collected within your own computer so no chance of your credentials and data getting leaked online! Once set up, the dashboard can be easily viewed in the web browser of your choosing. If this dashboard proves useful to you, please consider using my referral link on your future Tesla purchase: https://ts.la/junhyuk52504
 
 ## Supported Operating Systems
-- Windows
+- Windows (Win 8 or greater)
 - Mac (Planned)
 - Linux (Planned)
 
