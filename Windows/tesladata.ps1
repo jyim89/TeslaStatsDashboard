@@ -293,8 +293,7 @@ $vehicles | % {
         }
 
         ## Allow car to sleep if user is away from car
-        if (!$vi.is_user_present -and $vi.locked -and ($vbi.charging_state -eq "Disconnected") -and $isConsideredAwake)
-        {
+        if (!$vi.is_user_present -and $vi.locked -and ($vbi.charging_state -eq "Disconnected") -and ($vehicleData.Count -gt 1) -and $isConsideredAwake) {
             $allowSleepField = "$($_.id)_AllowSleep"
             $settings.$allowSleepField = $true
         }
