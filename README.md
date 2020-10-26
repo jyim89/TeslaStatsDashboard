@@ -22,7 +22,7 @@ Welcome to the TesDash! TesDash is a set of free, open source scripts that captu
 ## Setup steps
 1. From the local folder, locate and open "settings.js"
 2. Fill in your LoginEmail and LoginPassword using the login for your Tesla account
-3. You're done! So easy. To start viewing your data, open index.html on your favorite (supported) browser.
+3. You're done! So easy. To start viewing your data, open index.html on your favorite (supported) browser. Please give a few minutes for your data to start populating in the beginning.
 
 ## Configurable settings
 While the vehicle is active, TesDash will continuously ping the car for additional data. However, when the vehicle is not in use TesDash will allow the vehicle to go to sleep for battery conservation. In inactive mode, TesDash by default will wake up the vehicle once every 2 hours (7200 seconds) for data collection. To change this default wake interval, modify the "ForceWakeInterval" from "settings.js" to the desired time in seconds.
