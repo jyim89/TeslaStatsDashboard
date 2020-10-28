@@ -31,6 +31,24 @@ While the vehicle is active, TesDash will continuously ping the car for addition
 - Access your dashboard online by enabling web app services using IIS(Internet Information Services). Great for seeing your data on the go on your mobile device. Instructions on how to set this up to come soon.
 - If you don't mind spending some money for convenience, you can also utilize cloud services such as AWS and Azure to "host" your dashboard so that your computer doesn't always have to be running. Instructions on how to set this up to come soon.
 
+## Features
+Current supported:
+- Trends of Range and Battery % Level
+- Trends of Range and Driving efficiency
+- Phantom Battery loss per day stats
+- Miles per day stats
+- Charging stats per charging sessions (i.e. time spent charging, charge added, charging rate, etc.)
+- Battery availability (apparently you're not always able to use 100% of your battery)
+
+Planned features:
+- Battery and Range efficiency based on climate
+- Climate vs Power usage stats
+- Driving patterns (highway vs city) and battery efficiency
+- Efficiency stats around based on Car software version
+- Charging history based on Location
+- Trip data
+- I'm also open to any other suggestions that might be useful as well
+
 ## Disclaimers
 - For TesDash to actively collect data around your vehicle, the computer you installed TesDash must be on at all times. Otherwise you will see gaps in your data. To remove or stop TesDash data collection, simply delete the two tasks mentioned above from Task Scheduler.
 - Using TesDash keeps all your Credentials and data within your own computer so it should be secure. However, this does not mean it's foolproof. If you ever feel that your information has been compromised, immediately remove TesDash and change your password on Tesla.com.
