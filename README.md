@@ -52,3 +52,8 @@ Planned features:
 ## Disclaimers
 - For TesDash to actively collect data around your vehicle, the computer you installed TesDash must be on at all times. Otherwise you will see gaps in your data. To remove or stop TesDash data collection, simply delete the two tasks mentioned above from Task Scheduler.
 - Using TesDash keeps all your Credentials and data within your own computer so it should be secure. However, this does not mean it's foolproof. If you ever feel that your information has been compromised, immediately remove TesDash and change your password on Tesla.com.
+
+## Current screen shots of TesDash
+![Overview](/readmeimgs/overview.JPG)
+![Battery](/readmeimgs/Battery.jpg)
+![Charging](/readmeimgs/charging.jpg)
